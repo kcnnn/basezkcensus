@@ -76,26 +76,30 @@
     <!-- Load dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script type="module">
-        // Try to import ZKPassport SDK from local node_modules, fallback to CDN
+        // Load ZKPassport SDK from CDN
         let ZKPassportModule;
         try {
-            // Try local first
-            ZKPassportModule = await import('/node_modules/@zkpassport/sdk/dist/index.esm.js');
+            // Try Skypack first (ESM support)
+            ZKPassportModule = await import('https://cdn.skypack.dev/@zkpassport/sdk');
         } catch (e) {
-            // Fallback to CDN
+            console.error('Failed to load ZKPassport SDK from Skypack:', e);
+            // Try unpkg as fallback
             try {
-                ZKPassportModule = await import('https://cdn.skypack.dev/@zkpassport/sdk');
-            } catch (e2) {
-                console.error('Failed to load ZKPassport SDK:', e2);
-                // Try unpkg as last resort
                 ZKPassportModule = await import('https://unpkg.com/@zkpassport/sdk@latest/dist/index.esm.js');
+            } catch (e2) {
+                console.error('Failed to load ZKPassport SDK from unpkg:', e2);
+                throw new Error('Could not load ZKPassport SDK');
             }
         }
         
+        // Extract ZKPassport class from module
         if (ZKPassportModule && ZKPassportModule.ZKPassport) {
             window.ZKPassport = ZKPassportModule.ZKPassport;
         } else if (ZKPassportModule && ZKPassportModule.default) {
             window.ZKPassport = ZKPassportModule.default.ZKPassport || ZKPassportModule.default;
+        } else if (ZKPassportModule) {
+            // If the module itself is the class
+            window.ZKPassport = ZKPassportModule;
         }
         
         // Load main app

@@ -17,9 +17,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-// Serve ZKPassport SDK from node_modules
-app.use('/node_modules/@zkpassport/sdk', express.static(join(__dirname, 'node_modules/@zkpassport/sdk')));
-
 // API endpoint to submit census data
 app.post('/api/submit', (req, res) => {
   const { address, nationality } = req.body;
