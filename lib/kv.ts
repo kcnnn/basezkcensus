@@ -1,15 +1,70 @@
-import { kv } from '@vercel/kv'
+// In-memory storage fallback for when Vercel KV is not configured
+// Note: Data will be reset when the server restarts
+let useInMemoryStorage = false
 
-export { kv }
+// Try to import Vercel KV, fall back to in-memory if not available
+let kv: any
+try {
+  const kvModule = require('@vercel/kv')
+  kv = kvModule.kv
+  
+  // Test if KV is configured by checking for environment variables
+  if (!process.env.KV_REST_API_URL && !process.env.KV_URL) {
+    console.warn('⚠️ Vercel KV not configured. Using in-memory storage (data will not persist).')
+    useInMemoryStorage = true
+  }
+} catch (error) {
+  console.warn('⚠️ @vercel/kv not available. Using in-memory storage.')
+  useInMemoryStorage = true
+}
+
+// In-memory storage
+interface CensusEntry {
+  nationality: string
+  timestamp: number
+}
+
+const inMemoryStorage: {
+  census: Map<string, CensusEntry>
+  countryCounts: Map<string, number>
+} = {
+  census: new Map(),
+  countryCounts: new Map()
+}
 
 // Helper functions for census data operations
 export async function storeCensusEntry(address: string, nationality: string) {
   const lowercaseAddress = address.toLowerCase()
   
-  // Check if this address already exists
+  if (useInMemoryStorage) {
+    // In-memory storage implementation
+    const existing = inMemoryStorage.census.get(lowercaseAddress)
+    
+    // Store the census entry
+    inMemoryStorage.census.set(lowercaseAddress, {
+      nationality,
+      timestamp: Date.now()
+    })
+    
+    // Update country counts
+    if (!existing) {
+      const currentCount = inMemoryStorage.countryCounts.get(nationality) || 0
+      inMemoryStorage.countryCounts.set(nationality, currentCount + 1)
+    } else if (existing.nationality !== nationality) {
+      // Nationality changed, update both counts
+      const oldCount = inMemoryStorage.countryCounts.get(existing.nationality) || 0
+      inMemoryStorage.countryCounts.set(existing.nationality, Math.max(0, oldCount - 1))
+      
+      const newCount = inMemoryStorage.countryCounts.get(nationality) || 0
+      inMemoryStorage.countryCounts.set(nationality, newCount + 1)
+    }
+    
+    return { success: true }
+  }
+  
+  // Vercel KV implementation
   const existing = await kv.hget('census', lowercaseAddress)
   
-  // Store the census entry
   await kv.hset('census', {
     [lowercaseAddress]: {
       nationality,
@@ -17,11 +72,9 @@ export async function storeCensusEntry(address: string, nationality: string) {
     }
   })
   
-  // If this is a new entry (not updating), increment the country count
   if (!existing) {
     await kv.incr(`country:${nationality}`)
   } else if ((existing as any).nationality !== nationality) {
-    // If nationality changed, decrement old and increment new
     await kv.decr(`country:${(existing as any).nationality}`)
     await kv.incr(`country:${nationality}`)
   }
@@ -30,23 +83,43 @@ export async function storeCensusEntry(address: string, nationality: string) {
 }
 
 export async function getCensusStats() {
-  // Get all census entries
+  if (useInMemoryStorage) {
+    // In-memory storage implementation
+    const total = inMemoryStorage.census.size
+    const countries: { country: string; count: number }[] = []
+    
+    inMemoryStorage.countryCounts.forEach((count, country) => {
+      if (count > 0) {
+        countries.push({ country, count })
+      }
+    })
+    
+    // Sort by count descending, then by country name
+    countries.sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count
+      }
+      return a.country.localeCompare(b.country)
+    })
+    
+    return { countries, total }
+  }
+  
+  // Vercel KV implementation
   const censusEntries = await kv.hgetall('census') || {}
   const total = Object.keys(censusEntries).length
   
-  // Get all country counts
   const keys = await kv.keys('country:*')
   const countries: { country: string; count: number }[] = []
   
   for (const key of keys) {
-    const count = await kv.get<number>(key)
+    const count = await kv.get(key) as number
     if (count && count > 0) {
       const country = key.replace('country:', '')
       countries.push({ country, count })
     }
   }
   
-  // Sort by count descending, then by country name
   countries.sort((a, b) => {
     if (b.count !== a.count) {
       return b.count - a.count
@@ -56,4 +129,6 @@ export async function getCensusStats() {
   
   return { countries, total }
 }
+
+export { kv }
 
