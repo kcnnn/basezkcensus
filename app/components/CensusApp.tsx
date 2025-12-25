@@ -216,7 +216,7 @@ export default function CensusApp() {
         })
       }
       
-      setBaseStatus({ message: 'Scan the QR code with your Base wallet app, or use the button below to sign with a web wallet', type: 'info' })
+      setBaseStatus({ message: 'Use the button below to sign with a web wallet', type: 'info' })
       
     } catch (error: any) {
       console.error('Error initializing Base verification:', error)
@@ -396,7 +396,7 @@ export default function CensusApp() {
               <h2>Verify Base Address</h2>
             </div>
             <p className="step-description">
-              Scan the QR code below with your Base wallet app to sign a message and prove you own a Base address.
+              Click the button below to sign a message and prove you own a Base address.
             </p>
             <div className={`status-message ${baseStatus.type}`}>{baseStatus.message}</div>
             <div className="qr-container">
