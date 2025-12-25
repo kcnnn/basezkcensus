@@ -399,9 +399,6 @@ export default function CensusApp() {
               Click the button below to sign a message and prove you own a Base address.
             </p>
             <div className={`status-message ${baseStatus.type}`}>{baseStatus.message}</div>
-            <div className="qr-container">
-              <canvas ref={baseQrRef}></canvas>
-            </div>
             {showBaseProgress && (
               <div className="progress-indicator">
                 <div className="spinner"></div>
