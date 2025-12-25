@@ -14,14 +14,14 @@ const browserProcess = {
 
 // Set up globals immediately
 if (typeof globalThis !== 'undefined') {
-  (globalThis as any).Buffer = Buffer
-  (globalThis as any).process = browserProcess
+  ;(globalThis as any).Buffer = Buffer;
+  (globalThis as any).process = browserProcess;
   (globalThis as any).global = globalThis
 }
 
 if (typeof window !== 'undefined') {
-  (window as any).Buffer = Buffer
-  (window as any).process = browserProcess
+  ;(window as any).Buffer = Buffer;
+  (window as any).process = browserProcess;
   (window as any).global = window
 }
 

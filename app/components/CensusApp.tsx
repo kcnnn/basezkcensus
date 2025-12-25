@@ -2,14 +2,20 @@
 
 import { useEffect, useState, useRef } from 'react'
 import QRCode from 'qrcode'
-import { Buffer } from 'buffer'
 import { useAccount, useSignTypedData, useSignMessage } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 
-// Set Buffer globally before importing ZKPassport
-if (typeof window !== 'undefined' && typeof (window as any).Buffer === 'undefined') {
-  (window as any).Buffer = Buffer
-  (window as any).global = window
+// Import Buffer polyfill
+import { Buffer } from 'buffer'
+
+// Set Buffer globally for ZKPassport SDK
+if (typeof window !== 'undefined') {
+  if (!(window as any).Buffer) {
+    (window as any).Buffer = Buffer
+  }
+  if (!(window as any).global) {
+    (window as any).global = window
+  }
 }
 
 import { ZKPassport } from '@zkpassport/sdk'
