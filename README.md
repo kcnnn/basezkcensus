@@ -2,7 +2,7 @@
 
 A Next.js application that combines ZKPassport identity verification with Base blockchain wallet verification to create a privacy-preserving census.
 
-## Features
+## Features -
 
 - **ZKPassport Integration**: Verify users are 18+ and collect nationality using zero-knowledge proofs
 - **Base Wallet Verification**: Verify Base blockchain address ownership via EIP-712 signatures
